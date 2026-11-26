@@ -1,0 +1,64 @@
+# ---- Haskell: Cabal ----
+dist/
+dist-newstyle/
+cabal-dev/
+cabal.sandbox.config
+.cabal-sandbox/
+cabal.project.local
+cabal.project.local~
+.ghc.environment.*
+
+# ---- Haskell: Stack ----
+.stack-work/
+stack.yaml.lock
+
+# ---- Haskell: build artifacts ----
+*.o
+*.hi
+*.dyn_o
+*.dyn_hi
+*.chi
+*.chs.h
+*.hie
+*.prof
+*.aux
+*.hp
+*.eventlog
+*.tix
+.hpc/
+.hsenv/
+*.p_o
+*.p_hi
+
+# ---- Haskell: tooling ----
+.hie/
+.ghci_history
+hls.log
+.stylish-haskell.yaml.bak
+tags
+TAGS
+
+# ---- Emacs ----
+*~
+\#*\#
+.\#*
+*.elc
+auto-save-list/
+.saves-*
+*.rel
+.projectile
+.dir-locals.el.bak
+.emacs.desktop
+.emacs.desktop.lock
+.org-id-locations
+*_archive
+*_flymake.*
+/eshell/history
+/eshell/lastdir
+/elpa/
+/server/
+flycheck_*.el
+.lsp-session-*
+.dap-breakpoints
+.eglot-*
+.cask/
