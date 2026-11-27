@@ -69,7 +69,8 @@ scan_unitTests = testGroup "Unit Tests" tests
           ]
         )
       , ( "-123"
-        , [ Int (-123)
+        , [ Symbol Minus
+          , Int 123
           ]
         )
       ]
@@ -84,7 +85,7 @@ scan_unitTests = testGroup "Unit Tests" tests
 scan_properties :: TestTree
 scan_properties = testGroup "Properties"
   [ testProperty "positive integers" $
-    \(NonNegative x) -> scan (show x) == [Int x]
+    \(NonNegative x) -> scan (show x) === [Int x]
   , testProperty "negative integers" $
-    \(Negative x) -> scan (show x) == [Int x]
+    \(Negative x) -> scan (show x) === [Symbol Minus, Int (- x)]
   ]

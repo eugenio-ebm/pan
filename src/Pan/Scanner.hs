@@ -18,7 +18,6 @@ import Pan.Token
 scan :: [Char] -> [Token]
 scan [] = []
 scan ('=' : cs) = Symbol Eq : scan cs
-scan ('-' : c : cs) | isDigit c = scanInt True (c : cs)
 scan ('-' : cs) = Symbol Minus : scan cs
 scan ('(' : cs) = Symbol LP : scan cs
 scan (')' : cs) = Symbol RP : scan cs
