@@ -18,10 +18,12 @@ common warnings
 library
     import:           warnings
     exposed-modules:
+        Pan.Eval
         Pan.Expr
         Pan.Parser
         Pan.Scanner
         Pan.Token
+        Pan.Val
     -- other-modules:
     -- other-extensions:
     build-depends:    base ^>=4.18.3.0,

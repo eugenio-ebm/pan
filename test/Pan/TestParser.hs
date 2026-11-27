@@ -4,7 +4,7 @@ module Pan.TestParser
 
 import Pan.Parser
   ( runParser
-  , parseBinOp
+  , parseOp
   , parseAtom
   )
 
@@ -25,16 +25,16 @@ import qualified Pan.Expr as E
 
 testParser :: TestTree
 testParser = testGroup "Parser"
-  [ testGroup "parseBinOp"
-    [ parseBinOp_unitTests
+  [ testGroup "parseOp"
+    [ parseOp_unitTests
     ]
   , testGroup "parseAtom"
     [ parseAtom_unitTests
     ]
   ]
 
-parseBinOp_unitTests :: TestTree
-parseBinOp_unitTests = testGroup "Unit Tests" tests
+parseOp_unitTests :: TestTree
+parseOp_unitTests = testGroup "Unit Tests" tests
   where
     baseCases =
       [ ( [ T.Int 1
@@ -76,11 +76,25 @@ parseBinOp_unitTests = testGroup "Unit Tests" tests
       ]
       
     edgeCases =
-      [
+      [ ( [ T.Int 1
+          , T.Symbol T.Plus
+          , T.Symbol T.Minus
+          , T.Int 2
+          ]
+        , E.BinOp E.Add (E.Int 1) (E.UnOp E.Sub (E.Int 2))
+        , []
+        )
+      , ( [ T.Symbol T.Minus
+          , T.Symbol T.Minus
+          , T.Int 42
+          ]
+        , E.UnOp E.Sub (E.UnOp E.Sub (E.Int 42))
+        , []
+        )
       ]
 
     f' (ts, e, msgs) =
-      testCase (T.ppTokens ts) $ runParser parseBinOp ts @?= Just (e, msgs)
+      testCase (T.ppTokens ts) $ runParser parseOp ts @?= Just (e, msgs)
 
     tests =
       [ testGroup "Base Cases" (map f' baseCases)

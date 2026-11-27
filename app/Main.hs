@@ -4,13 +4,14 @@ import System.IO (hFlush, stdout)
 
 import Control.Monad (forever)
 
-import Pan.Expr (Expr)
+import Pan.Val (ppVal)
 
 import Pan.Scanner (scan)
 import Pan.Parser (parse)
+import Pan.Eval (eval)
 
 main :: IO ()
 main = forever $ do
   putStr "> "
   hFlush stdout
-  getLine >>= print . parse . scan
+  getLine >>= putStrLn . ppVal . eval . parse . scan

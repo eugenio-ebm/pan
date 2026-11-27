@@ -2,7 +2,7 @@ module Pan.Parser
   ( runParser
   , parse
   , parseExpr
-  , parseBinOp
+  , parseOp
   , parseAtom
   ) where
 
@@ -62,41 +62,55 @@ try :: Parser a -> Parser (Maybe a)
 try p = (p >>= return . Just) <|> return Nothing
 
 parseExpr :: Parser Expr
-parseExpr = parseBinOp
+parseExpr = parseOp
 
-parseBinOp :: Parser Expr
-parseBinOp = parseBinOp' 0
+parseOp :: Parser Expr
+parseOp = parseOp' 0
   where
-    parseBinOp' :: Int -> Parser Expr
-    parseBinOp' mp = parseInfix mp
+    parseOp' :: Int -> Parser Expr
+    parseOp' mp = parseInfix mp
 
     precPrefix :: Op -> Int
     precPrefix E.Add = 5
     precPrefix E.Sub = 5
     precPrefix _ = -67
 
+    parsePrefixOp :: Parser Op
+    parsePrefixOp = do
+      t <- next
+      case t of
+        T.Symbol T.Plus -> return E.Add
+        T.Symbol T.Minus -> return E.Sub
+        _ -> fail "bad op"
+
     parsePrefix :: Parser Expr
     parsePrefix = do
-      op <- parseOp
+      op <- parsePrefixOp
       let p = precPrefix op
-      e <- parseBinOp' p
+      e <- parseOp' p
       return (E.UnOp op e)
 
     precInfix :: Op -> (Int, Int)
     precInfix E.Add = (1, 2)
     precInfix E.Sub = (1, 2)
     precInfix E.Mul = (3, 4)
-    
+
+    parseInfixOp :: Parser Op
+    parseInfixOp = do
+      t <- next
+      case t of
+        T.Symbol T.Plus -> return E.Add
+        T.Symbol T.Minus -> return E.Sub
+        T.Symbol T.Star -> return E.Mul
+        _ -> fail "bad op"
+
     parseInfix :: Int -> Parser Expr
     parseInfix mp = do
-      t <- lookahead (try parseOp)
-      lhs <- case t of
-               Nothing -> parseAtom
-               Just _ -> parsePrefix
+      lhs <- parsePrefix <|> parseAtom
       go lhs
         where
           go lhs = do
-            l <- lookahead (try parseOp)
+            l <- lookahead (try parseInfixOp)
             case l of
               Nothing -> return lhs
               Just op -> do
@@ -104,18 +118,9 @@ parseBinOp = parseBinOp' 0
                 if lp < mp
                   then return lhs
                   else do
-                  op' <- parseOp
-                  rhs <- parseBinOp' rp
+                  op' <- parseInfixOp
+                  rhs <- parseOp' rp
                   go (E.BinOp op' lhs rhs)
-  
-parseOp :: Parser Op
-parseOp = do
-  t <- next
-  case t of
-    T.Symbol T.Plus -> return E.Add
-    T.Symbol T.Minus -> return E.Sub
-    T.Symbol T.Star -> return E.Mul
-    _ -> fail "bad op"
 
 parseAtom :: Parser Expr
 parseAtom = parseVar <|> parseInt <|> parseParens
