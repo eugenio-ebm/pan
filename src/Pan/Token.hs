@@ -1,21 +1,23 @@
-module Pan.Token (Token(..)) where
+module Pan.Token
+  ( Keyword (..)
+  , Symbol (..)
+  , Token (..)
+  ) where
+
+data Keyword
+  = Let
+  | In
+  deriving (Eq, Show)
+
+data Symbol
+  = Eq
+  | LP
+  | RP
+  deriving (Eq, Show)
 
 data Token
-  = Let
-  | Letrec
-  | Eq
-  | In
-  | Backslash
-  | Dot
-  | Case
-  | Bar
-  | Arr
-  | Plus
-  | Minus
-  | LP
-  | Comma
-  | RP
-  | TypeId String
-  | Id String
-  | Int Int
+  = Keyword Keyword
+  | Symbol Symbol
+  | Ident String
+  | Int Integer
   deriving (Eq, Show)

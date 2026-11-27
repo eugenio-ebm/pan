@@ -1,34 +1,41 @@
-module Pan.Scanner (scan) where
+module Pan.Scanner
+  ( scan
+  ) where
 
-import Data.Char (isSpace, isAlpha, isAlphaNum, isNumber, isUpper)
+import Data.Char
+  ( isAlpha
+  , isAlphaNum
+  , isDigit
+  , isSpace
+  )
 
-import Pan.Token (Token(..))
+import Pan.Token
+  ( Keyword (..)
+  , Symbol (..)
+  , Token (..)
+  )
 
 scan :: [Char] -> [Token]
 scan [] = []
-scan (s : cs) | isSpace s = scan cs
-scan ('=' : cs) = Eq : scan cs
-scan ('\\' : cs) = Backslash : scan cs
-scan ('.' : cs) = Dot : scan cs
-scan ('|' : cs) = Bar : scan cs
-scan ('-' : '>' : cs) = Arr : scan cs
-scan ('+' : cs) = Plus : scan cs
-scan ('-' : cs) = Minus : scan cs
-scan ('(' : cs) = LP : scan cs
-scan (',' : cs) = Comma : scan cs
-scan (')' : cs) = RP : scan cs
-scan (x : cs) | isAlpha x = t : scan cs'
+scan ('=' : cs) = Symbol Eq : scan cs
+scan ('(' : cs) = Symbol LP : scan cs
+scan (')' : cs) = Symbol RP : scan cs
+scan (c : cs)
+  | isSpace c = scan cs
+  | isAlpha c = scanIdent (c : cs)
+  | isDigit c = scanInt (c : cs)
+  | otherwise = error $ "Unknown char '" ++ [c] ++ "'"
+
+scanIdent :: [Char] -> [Token]
+scanIdent s = t : scan cs
   where
-    (xs, cs') = span isAlphaNum cs
-    t = case x : xs of
-          "let" -> Let
-          "letrec" -> Letrec
-          "in" -> In
-          "case" -> Case
-          s | isUpper x -> TypeId s
-          s -> Id s
-scan (d : cs) | isNumber d = Int v : scan cs'
+    (x, cs) = span isAlphaNum s
+    t = case x of
+          "let" -> Keyword Let
+          "in" -> Keyword In
+          _ -> Ident x
+
+scanInt :: [Char] -> [Token]
+scanInt s = Int (read ds) : scan cs
   where
-    (ds, cs') = span isNumber cs
-    v = read (d : ds)
-scan (t : _) = error $ "Unknown char '" ++ [t] ++ "'"
+    (ds, cs) = span isDigit s
