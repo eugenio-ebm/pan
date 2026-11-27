@@ -13,4 +13,4 @@ main :: IO ()
 main = forever $ do
   putStr "> "
   hFlush stdout
-  getLine >>= eval . parse . scan
+  getLine >>= print . parse . scan

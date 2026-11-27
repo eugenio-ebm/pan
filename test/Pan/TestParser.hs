@@ -122,6 +122,15 @@ parseAtom_unitTests = testGroup "Unit Tests" tests
         , E.Var "f"
         , []
         )
+      , ( [ T.Symbol T.LP
+          , T.Symbol T.LP
+          , T.Ident "f"
+          ]
+        , E.Var "f"
+        , [ "Missing ')'"
+          , "Missing ')'"
+          ]
+        )
       ]
 
     f (ts, e, msgs) =

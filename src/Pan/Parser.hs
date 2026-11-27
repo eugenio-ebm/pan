@@ -1,5 +1,7 @@
 module Pan.Parser
   ( runParser
+  , parse
+  , parseExpr
   , parseBinOp
   , parseAtom
   ) where
@@ -18,7 +20,12 @@ import Pan.Expr
   )
 import qualified Pan.Expr as E
 
-import Pan.Scanner (scan)
+parse :: [Token] -> Expr
+parse ts =
+  case runParser parseExpr ts of
+    Just (expr, []) -> expr
+    Just (_, msgs) -> error $ unlines msgs
+    Nothing -> error "Parse error"
 
 type Parser = RWST () [String] [Token] Maybe
 
