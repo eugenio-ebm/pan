@@ -18,8 +18,10 @@ import Pan.Token
 
 testScanner :: TestTree
 testScanner = testGroup "Scanner"
-  [ scan_unitTests
-  , scan_properties
+  [ testGroup "scan"
+    [ scan_unitTests
+    , scan_properties
+    ]
   ]
 
 scan_unitTests :: TestTree
@@ -75,7 +77,7 @@ scan_unitTests = testGroup "Unit Tests" tests
         )
       ]
 
-    f = \(s, ts) -> testCase s $ scan s @?= ts
+    f (s, ts) = testCase s $ scan s @?= ts
 
     tests =
       [ testGroup "Base Cases" (map f baseCases)
