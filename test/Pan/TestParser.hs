@@ -4,7 +4,8 @@ module Pan.TestParser
 
 import Pan.Parser
   ( runParser
-  , parsePratt
+  , parseBinOp
+  , parseAtom
   )
 
 import Test.Tasty
@@ -24,13 +25,16 @@ import qualified Pan.Expr as E
 
 testParser :: TestTree
 testParser = testGroup "Parser"
-  [ testGroup "parsePratt"
-    [ parsePratt_unitTests
+  [ testGroup "parseBinOp"
+    [ parseBinOp_unitTests
+    ]
+  , testGroup "parseAtom"
+    [ parseAtom_unitTests
     ]
   ]
 
-parsePratt_unitTests :: TestTree
-parsePratt_unitTests = testGroup "Unit Tests" tests
+parseBinOp_unitTests :: TestTree
+parseBinOp_unitTests = testGroup "Unit Tests" tests
   where
     baseCases =
       [ ( [ T.Int 1
@@ -58,14 +62,70 @@ parsePratt_unitTests = testGroup "Unit Tests" tests
         , E.BinOp E.Add (E.Int 1) (E.BinOp E.Mul (E.Int 2) (E.Int 3))
         , []
         )
+      , ( [ T.Symbol T.LP
+          , T.Int 1
+          , T.Symbol T.Plus
+          , T.Int 2
+          , T.Symbol T.RP
+          , T.Symbol T.Star
+          , T.Int 3
+          ]
+        , E.BinOp E.Mul (E.BinOp E.Add (E.Int 1) (E.Int 2)) (E.Int 3)
+        , []
+        )
       ]
-
+      
     edgeCases =
       [
       ]
 
+    f' (ts, e, msgs) =
+      testCase (T.ppTokens ts) $ runParser parseBinOp ts @?= Just (e, msgs)
+
+    tests =
+      [ testGroup "Base Cases" (map f' baseCases)
+      , testGroup "Edge Cases" (map f' edgeCases)
+      ]
+
+parseAtom_unitTests = testGroup "Unit Tests" tests
+  where
+    baseCases =
+      [ ( [ T.Ident "f"
+          ]
+        , E.Var "f"
+        , []
+        )
+      , ( [ T.Int 42
+          ]
+        , E.Int 42
+        , []
+        )
+      , ( [ T.Symbol T.LP
+          , T.Ident "f"
+          , T.Symbol T.RP
+          ]
+        , E.Var "f"
+        , []
+        )
+      ]
+      
+    edgeCases =
+      [ ( [ T.Symbol T.LP
+          , T.Ident "f"
+          ]
+        , E.Var "f"
+        , [ "Missing ')'" ]
+        )
+      , ( [ T.Ident "f"
+          , T.Symbol T.RP
+          ]
+        , E.Var "f"
+        , []
+        )
+      ]
+
     f (ts, e, msgs) =
-      testCase (T.ppTokens ts) $ runParser ts (parsePratt 0) @?= (e, msgs)
+      testCase (T.ppTokens ts) $ runParser parseAtom ts @?= Just (e, msgs)
 
     tests =
       [ testGroup "Base Cases" (map f baseCases)

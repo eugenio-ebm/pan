@@ -18,6 +18,7 @@ import Pan.Token
 scan :: [Char] -> [Token]
 scan [] = []
 scan ('=' : cs) = Symbol Eq : scan cs
+scan ('+' : cs) = Symbol Plus : scan cs
 scan ('-' : cs) = Symbol Minus : scan cs
 scan ('*' : cs) = Symbol Star : scan cs
 scan ('(' : cs) = Symbol LP : scan cs

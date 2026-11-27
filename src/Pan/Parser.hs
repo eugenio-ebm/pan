@@ -1,8 +1,10 @@
 module Pan.Parser
   ( runParser
-  , parsePratt
+  , parseBinOp
+  , parseAtom
   ) where
 
+import Control.Applicative
 import Control.Monad.RWS
 
 import Pan.Token
@@ -16,11 +18,12 @@ import Pan.Expr
   )
 import qualified Pan.Expr as E
 
+import Pan.Scanner (scan)
 
-type Parser = RWS () [String] [Token]
+type Parser = RWST () [String] [Token] Maybe
 
-runParser :: [Token] -> Parser a -> (a, [String])
-runParser ts p = evalRWS p () ts
+runParser :: Parser a -> [Token] -> Maybe (a, [String])
+runParser p ts = evalRWST p () ts
 
 peek :: Parser Token
 peek = do
@@ -38,53 +41,95 @@ next = do
       put ts'
       return t
 
-parsePratt :: Int -> Parser Expr
-parsePratt mp = do
-  lhs <- parseAtom
-  go lhs
+warn :: String -> Parser ()
+warn = tell . pure
+
+lookahead :: Parser a -> Parser a
+lookahead p = do
+  s <- get
+  x <- p
+  put s
+  return x
+
+try :: Parser a -> Parser (Maybe a)
+try p = (p >>= return . Just) <|> return Nothing
+
+parseExpr :: Parser Expr
+parseExpr = parseBinOp
+
+parseBinOp :: Parser Expr
+parseBinOp = parseBinOp' 0
   where
-    isOp :: Token -> Bool
-    isOp (T.Symbol T.Plus) = True
-    isOp (T.Symbol T.Minus) = True
-    isOp (T.Symbol T.Star) = True
-    isOp _ = False
+    parseBinOp' :: Int -> Parser Expr
+    parseBinOp' mp = parseInfix mp
 
-    getPrec :: Token -> (Int, Int)
-    getPrec (T.Symbol T.Plus) = (1, 2)
-    getPrec (T.Symbol T.Minus) = (1, 2)
-    getPrec (T.Symbol T.Star) = (3, 4)
-    getPrec t = error $ "bad op '" ++ T.ppToken t ++ "'"
+    precPrefix :: Op -> Int
+    precPrefix E.Add = 5
+    precPrefix E.Sub = 5
+    precPrefix _ = -67
 
-    cons :: Token -> Expr -> Expr -> Expr
-    cons (T.Symbol T.Plus) = E.BinOp E.Add
-    cons (T.Symbol T.Minus) = E.BinOp E.Sub
-    cons (T.Symbol T.Star) = E.BinOp E.Mul
-    cons t = error $ "bad op '" ++ T.ppToken t ++ "'"
+    parsePrefix :: Parser Expr
+    parsePrefix = do
+      op <- parseOp
+      let p = precPrefix op
+      e <- parseBinOp' p
+      return (E.UnOp op e)
 
-    go :: Expr -> Parser Expr
-    go lhs = do
-      op <- peek
-      if isOp op
-        then
-        do
-          let (lp, rp) = getPrec op
-          if lp < mp
-            then
-            do
-              return lhs
-            else
-            do
-              _ <- next
-              rhs <- parsePratt rp
-              go (cons op lhs rhs)
-        else
-        do
-          return lhs
+    precInfix :: Op -> (Int, Int)
+    precInfix E.Add = (1, 2)
+    precInfix E.Sub = (1, 2)
+    precInfix E.Mul = (3, 4)
+    
+    parseInfix :: Int -> Parser Expr
+    parseInfix mp = do
+      t <- lookahead (try parseOp)
+      lhs <- case t of
+               Nothing -> parseAtom
+               Just _ -> parsePrefix
+      go lhs
+        where
+          go lhs = do
+            l <- lookahead (try parseOp)
+            case l of
+              Nothing -> return lhs
+              Just op -> do
+                let (lp, rp) = precInfix op
+                if lp < mp
+                  then return lhs
+                  else do
+                  op' <- parseOp
+                  rhs <- parseBinOp' rp
+                  go (E.BinOp op' lhs rhs)
+  
+parseOp :: Parser Op
+parseOp = do
+  t <- next
+  case t of
+    T.Symbol T.Plus -> return E.Add
+    T.Symbol T.Minus -> return E.Sub
+    T.Symbol T.Star -> return E.Mul
+    _ -> fail "bad op"
 
 parseAtom :: Parser Expr
-parseAtom = do
+parseAtom = parseVar <|> parseInt <|> parseParens
+
+parseVar :: Parser Expr
+parseVar = do
+  T.Ident x <- next
+  return (E.Var x)
+
+parseInt :: Parser Expr
+parseInt = do
+  T.Int v <- next
+  return (E.Int v)
+
+parseParens :: Parser Expr
+parseParens = do
+  T.Symbol T.LP <- next
+  e <- parseExpr
   t <- peek
   case t of
-    T.Ident x -> next >> return (E.Var x)
-    T.Int v -> next >> return (E.Int v)
-    _ -> error "Parse error"
+    T.Symbol T.RP -> next >> return e
+    _ -> do
+      warn "Missing ')'"
+      return e

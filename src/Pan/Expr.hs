@@ -11,6 +11,7 @@ data Op
 
 data Expr
   = Let String Expr Expr
+  | App Expr Expr
   | BinOp Op Expr Expr
   | UnOp Op Expr
   | Var String
