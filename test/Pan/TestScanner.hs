@@ -8,6 +8,7 @@ import Pan.Scanner
 
 import Test.Tasty
 import Test.Tasty.HUnit
+import Test.Tasty.QuickCheck
 
 import Pan.Token
   ( Keyword (..)
@@ -17,8 +18,8 @@ import Pan.Token
 
 testScanner :: TestTree
 testScanner = testGroup "Scanner"
-  [
-    scan_unitTests
+  [ scan_unitTests
+  , scan_properties
   ]
 
 scan_unitTests :: TestTree
@@ -62,6 +63,15 @@ scan_unitTests = testGroup "Unit Tests" tests
         , [ Ident "letter"
           ]
         )
+      , ( "- 123"
+        , [ Symbol Minus
+          , Int 123
+          ]
+        )
+      , ( "-123"
+        , [ Int (-123)
+          ]
+        )
       ]
 
     f = \(s, ts) -> testCase s $ scan s @?= ts
@@ -70,3 +80,11 @@ scan_unitTests = testGroup "Unit Tests" tests
       [ testGroup "Base Cases" (map f baseCases)
       , testGroup "Edge Cases" (map f edgeCases)
       ] 
+
+scan_properties :: TestTree
+scan_properties = testGroup "Properties"
+  [ testProperty "positive integers" $
+    \(NonNegative x) -> scan (show x) == [Int x]
+  , testProperty "negative integers" $
+    \(Negative x) -> scan (show x) == [Int x]
+  ]
